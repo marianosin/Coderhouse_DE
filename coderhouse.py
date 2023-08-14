@@ -39,21 +39,30 @@ conn = sa.create_engine(
     connect_args={'options': f'-c search_path={user}'})
 
 
-# In[5]:
+# In[73]:
 
 
-# conn.execute("""
-#         CREATE TABLE imf_monetary_data (
-#             date TIMESTAMP,
-#             country VARCHAR,
-#             broad_money FLOAT,
-#             currency_in_circulation FLOAT,
-#             monetary_base FLOAT,
-#         );
-#              """)
+conn.execute("drop table imf_monetary_data")
 
 
-# In[6]:
+# In[74]:
+
+
+conn.execute("""
+    CREATE TABLE imf_monetary_data (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        date TIMESTAMP,
+        country VARCHAR,
+        broad_money FLOAT,
+        currency_in_circulation FLOAT,
+        monetary_base FLOAT,
+        entity VARCHAR UNIQUE
+    )
+    SORTKEY (date, country);
+""")
+
+
+# In[9]:
 
 
 import pandas as pd
@@ -61,7 +70,7 @@ import requests
 from functools import reduce
 
 
-# In[7]:
+# In[10]:
 
 
 #Conexión a datos de fmi por api pública de descarga libre
@@ -155,7 +164,7 @@ def ifm_data(variables, frecuency, diccionario_paises):
 
 
 
-# In[8]:
+# In[11]:
 
 
 # Series a pasar a la funcion, según ISSUE: 56102
@@ -179,7 +188,7 @@ series_dict3 = {
 }
 
 
-# In[9]:
+# In[12]:
 
 
 # Función que trea el listado de países del FMI
@@ -187,7 +196,7 @@ series_dict3 = {
 diccionario_paises = get_counries()
 
 
-# In[10]:
+# In[13]:
 
 
 # Función para obtener la data de las variables solicitadas en el ISSUE
@@ -197,13 +206,13 @@ df2 = ifm_data(series_dict2, "M", diccionario_paises)
 df3 = ifm_data(series_dict3, "M", diccionario_paises)
 
 
-# In[11]:
+# In[14]:
 
 
 data = pd.concat([df1,df2,df3])
 
 
-# In[12]:
+# In[15]:
 
 
 # Paso a float las columnas numericas
@@ -214,20 +223,47 @@ for col in data.columns:
         continue
 
 
-# In[13]:
+# In[16]:
 
 
 data = data.reset_index()
 data.columns = [x.replace(' ','_').lower() for x in data.columns]
 
 
-# In[15]:
+# In[35]:
 
 
-#Tuve que subir 5 porque el total (38000 filas no lo procesaba)
-data.head().to_sql(f'imf_monetary_data',
-                conn,
-               index=False, if_exists='replace')
+# genero dos condiciones, str date y una columna unica para garantizar unicidad de los datos
+data['date'] = data['date'].dt.strftime('%Y-%m-%d')
+
+
+# In[41]:
+
+
+data['entity'] = data['date'] + '-' + data['country']
+
+
+# In[70]:
+
+
+data = data.fillna(0)
+
+
+# In[71]:
+
+
+#genero los chunks para insertar los datos de a 100, lo hago asi ya que sino quedaba muy pesado el upload
+chunk_size = 100
+chunks = [','.join([str(tuple(row)) for row in data[i:i + chunk_size].values]) for i in range(0, len(data), chunk_size)]
+
+
+# In[75]:
+
+
+for i in chunks:
+    conn.execute(f"""
+    insert into imf_monetary_data (date, broad_money, country, currency_in_circulation, monetary_base, entity) 
+        values {i}""")
 
 
 # In[ ]:
