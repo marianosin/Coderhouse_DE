@@ -1,25 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
-# !pip install sqlalchemy library needed
-
-
-# In[2]:
-
-
-# !pip install psycopg2-binary library needed
-
-
-# In[3]:
-
-
-# library needed
-# !pip install "redshift_connector[full]"
-# !pip3 install sqlalchemy-redshift
-
 
 # In[4]:
 
@@ -42,24 +20,6 @@ conn = sa.create_engine(
 # In[73]:
 
 
-conn.execute("drop table imf_monetary_data")
-
-
-# In[74]:
-
-
-conn.execute("""
-    CREATE TABLE imf_monetary_data (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        date TIMESTAMP,
-        country VARCHAR,
-        broad_money FLOAT,
-        currency_in_circulation FLOAT,
-        monetary_base FLOAT,
-        entity VARCHAR UNIQUE
-    )
-    SORTKEY (date, country);
-""")
 
 
 # In[9]:
