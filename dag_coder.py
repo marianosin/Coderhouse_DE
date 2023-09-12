@@ -253,8 +253,8 @@ from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
 
 default_args = {
-    'owner': 'your_name',
-    'start_date': datetime(2023, 9, 11),
+    'owner': 'Mariano Radusky',
+    'start_date': datetime(2023, 9, 5),
 }
 
 dag = DAG(
